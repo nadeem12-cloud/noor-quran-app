@@ -1,9 +1,9 @@
-import { Bookmark, Share2 } from "lucide-react";
+import { Bookmark, Share2, Play, Pause } from "lucide-react";
 import { useStore } from "../store/useStore";
 
 /**
  * Renders one verse: Arabic text, transliteration, the selected translation,
- * and quick actions (save / share). Used in the reader, search results,
+ * and quick actions (play / save / share). Used in the reader, search results,
  * favorites tray, and the Verse of the Day banner.
  */
 export default function VerseCard({ verse, surahName, showTransliteration = true, compact = false }) {
@@ -12,6 +12,23 @@ export default function VerseCard({ verse, surahName, showTransliteration = true
   const isFavorite = useStore((s) => s.isFavorite(verse.verseKey));
   const toggleFavorite = useStore((s) => s.toggleFavorite);
   const fontScale = useStore((s) => s.fontScale);
+
+  // Audio state
+  const playerVerseKey = useStore((s) => s.playerVerseKey);
+  const isPlaying = useStore((s) => s.isPlaying);
+  const playVerse = useStore((s) => s.playVerse);
+  const pauseAudio = useStore((s) => s.pauseAudio);
+
+  const isThisVersePlaying = playerVerseKey === verse.verseKey && isPlaying;
+  const isThisVerseLoaded = playerVerseKey === verse.verseKey;
+
+  const handlePlayPause = () => {
+    if (isThisVersePlaying) {
+      pauseAudio();
+    } else {
+      playVerse(verse.verseKey);
+    }
+  };
 
   const translation =
     verse.translations.find((t) => t.lang === translationLang) ?? verse.translations[0];
@@ -33,7 +50,7 @@ export default function VerseCard({ verse, surahName, showTransliteration = true
   };
 
   return (
-    <div className="verse-card">
+    <div className={`verse-card ${isThisVerseLoaded ? "verse-card--active" : ""}`}>
       <div className="verse-refline">
         <span className="verse-key">
           {verse.verseKey}
@@ -56,6 +73,20 @@ export default function VerseCard({ verse, surahName, showTransliteration = true
       {!compact && translationLabel && <p className="verse-translator">{translationLabel}</p>}
 
       <div className="verse-actions">
+        {/* Play / Pause */}
+        <button
+          className={`btn btn-subtle ${isThisVerseLoaded ? "is-active" : ""}`}
+          onClick={handlePlayPause}
+          aria-label={isThisVersePlaying ? "Pause recitation" : "Play recitation"}
+        >
+          {isThisVersePlaying ? (
+            <Pause size={16} fill="currentColor" />
+          ) : (
+            <Play size={16} fill={isThisVerseLoaded ? "currentColor" : "none"} />
+          )}
+          {isThisVersePlaying ? "Pause" : "Play"}
+        </button>
+
         <button
           className={`btn btn-subtle ${isFavorite ? "is-active" : ""}`}
           onClick={() => toggleFavorite(verse.verseKey)}
@@ -65,6 +96,7 @@ export default function VerseCard({ verse, surahName, showTransliteration = true
           <Bookmark size={16} fill={isFavorite ? "currentColor" : "none"} />
           {isFavorite ? "Saved" : "Save"}
         </button>
+
         <button className="btn btn-subtle" onClick={handleShare} aria-label="Share verse">
           <Share2 size={16} />
           Share

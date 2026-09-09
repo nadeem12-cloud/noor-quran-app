@@ -8,6 +8,7 @@ import VerseViewer from "./components/VerseViewer";
 import SearchView from "./components/SearchView";
 import Settings from "./components/Settings";
 import FavoritesTray from "./components/FavoritesTray";
+import AudioPlayer from "./components/AudioPlayer";
 
 export default function App() {
   const hydrated = useStore((s) => s.hydrated);
@@ -31,6 +32,7 @@ export default function App() {
         {view === "search" && <SearchView />}
         {view === "settings" && <Settings />}
       </main>
+      <AudioPlayer />
       <BottomNav />
       <FavoritesTray />
     </div>

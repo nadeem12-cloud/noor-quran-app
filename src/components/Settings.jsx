@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useStore } from "../store/useStore";
 import { downloadAllChapters, getDownloadedChapterCount, getSurahs } from "../lib/quranData";
+import { RECITERS } from "../lib/audio";
 
 export default function Settings() {
   const theme = useStore((s) => s.theme);
@@ -10,6 +11,8 @@ export default function Settings() {
   const translations = useStore((s) => s.translations);
   const fontScale = useStore((s) => s.fontScale);
   const setFontScale = useStore((s) => s.setFontScale);
+  const reciter = useStore((s) => s.reciter);
+  const setReciter = useStore((s) => s.setReciter);
 
   const [downloaded, setDownloaded] = useState(0);
   const [total, setTotal] = useState(114);
@@ -84,6 +87,35 @@ export default function Settings() {
         ))}
       </div>
 
+      {/* ── Reciter picker ── */}
+      <div className="settings-group">
+        <div className="settings-label" style={{ marginBottom: 4 }}>
+          Reciter
+        </div>
+        <div className="settings-hint" style={{ marginBottom: 12 }}>
+          Audio served via everyayah.com — requires internet for first play.
+        </div>
+        {RECITERS.map((r) => (
+          <button
+            key={r.id}
+            className="surah-row reciter-row"
+            style={{ width: "100%", textAlign: "left" }}
+            onClick={() => setReciter(r.id)}
+          >
+            <span className="surah-info" style={{ margin: 0 }}>
+              <span className="surah-name-translit" style={{ fontSize: "0.94rem" }}>
+                {r.label}
+              </span>
+              <span className="surah-name-meta">{r.style}</span>
+            </span>
+            <span className="reciter-arabic">{r.arabicLabel}</span>
+            {reciter === r.id && (
+              <span style={{ color: "var(--accent)", marginLeft: 10 }}>✓</span>
+            )}
+          </button>
+        ))}
+      </div>
+
       <div className="settings-group">
         <div className="settings-row" style={{ borderBottom: "none", alignItems: "flex-start" }}>
           <div style={{ flex: 1 }}>
@@ -114,9 +146,9 @@ export default function Settings() {
         <p className="settings-hint" style={{ lineHeight: 1.6 }}>
           Arabic text (Uthmani script) via The Noble Qur'an Encyclopedia. Transliteration via the
           Tanzil Project (tanzil.net). English and Urdu translations via quranenc.com, packaged by
-          the open-source <em>quran-json</em> project (CC BY-4.0). Daily context notes are
-          editorial summaries written for this app — please verify against a qualified scholar
-          before relying on them for religious rulings.
+          the open-source <em>quran-json</em> project (CC BY-4.0). Audio via everyayah.com. Daily
+          context notes are editorial summaries written for this app — please verify against a
+          qualified scholar before relying on them for religious rulings.
         </p>
       </div>
     </div>

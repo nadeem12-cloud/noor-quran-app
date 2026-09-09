@@ -24,14 +24,17 @@ export const useStore = create((set, get) => ({
   closeTray: () => set({ trayOpen: false }),
 
   async hydrate() {
-    const [favorites, theme, translationLang, fontScale] = await Promise.all([
+    const [favorites, theme, translationLang, fontScale, savedReciter] = await Promise.all([
       db.favorites.orderBy("savedAt").reverse().toArray(),
       getSetting("theme", "dark"),
       getSetting("translationLang", "en"),
       getSetting("fontScale", 1),
+      getSetting("reciter", "Alafasy_128kbps"),
     ]);
+    const { RECITERS, DEFAULT_RECITER } = await import("../lib/audio");
+    const reciter = RECITERS.some((r) => r.id === savedReciter) ? savedReciter : DEFAULT_RECITER;
     document.documentElement.dataset.theme = theme;
-    set({ favorites, theme, translationLang, fontScale, hydrated: true });
+    set({ favorites, theme, translationLang, fontScale, reciter, hydrated: true });
   },
 
   async toggleFavorite(verseKey) {
@@ -61,5 +64,84 @@ export const useStore = create((set, get) => ({
   async setFontScale(scale) {
     await setSetting("fontScale", scale);
     set({ fontScale: scale });
+  },
+
+  // ── Audio player ──────────────────────────────────────────────
+  // playerVerseKey: "surah:ayah" of the track currently loaded in the player.
+  // isPlaying: whether the audio element should be playing right now.
+  // reciter: everyayah.com reciter ID string.
+  playerVerseKey: null,
+  isPlaying: false,
+  reciter: "Alafasy_128kbps",
+
+  /** Start playing a verse (loads it if different from current). */
+  playVerse(verseKey) {
+    const { playerVerseKey } = get();
+    if (playerVerseKey === verseKey) {
+      // Same track — just resume
+      set({ isPlaying: true });
+    } else {
+      set({ playerVerseKey: verseKey, isPlaying: true });
+    }
+  },
+
+  pauseAudio() {
+    set({ isPlaying: false });
+  },
+
+  resumeAudio() {
+    set({ isPlaying: true });
+  },
+
+  stopAudio() {
+    set({ playerVerseKey: null, isPlaying: false });
+  },
+
+  /** Advance to the next ayah, or the first ayah of the next surah. */
+  async nextVerse() {
+    const { playerVerseKey } = get();
+    if (!playerVerseKey) return;
+    const [surah, ayah] = playerVerseKey.split(":").map(Number);
+    const { getSurahs } = await import("../lib/quranData");
+    const surahs = await getSurahs();
+    const surahData = surahs.find((s) => s.number === surah);
+    if (!surahData) return;
+    if (ayah < surahData.versesCount) {
+      set({ playerVerseKey: `${surah}:${ayah + 1}`, isPlaying: true });
+    } else if (surah < 114) {
+      set({ playerVerseKey: `${surah + 1}:1`, isPlaying: true });
+    } else {
+      // End of Quran
+      set({ isPlaying: false });
+    }
+  },
+
+  /** Go back to the previous ayah, or the last ayah of the previous surah. */
+  async prevVerse() {
+    const { playerVerseKey } = get();
+    if (!playerVerseKey) return;
+    const [surah, ayah] = playerVerseKey.split(":").map(Number);
+    const { getSurahs } = await import("../lib/quranData");
+    const surahs = await getSurahs();
+    if (ayah > 1) {
+      set({ playerVerseKey: `${surah}:${ayah - 1}`, isPlaying: true });
+    } else if (surah > 1) {
+      const prevSurah = surahs.find((s) => s.number === surah - 1);
+      if (prevSurah) {
+        set({ playerVerseKey: `${surah - 1}:${prevSurah.versesCount}`, isPlaying: true });
+      }
+    }
+  },
+
+  async setReciter(id) {
+    await setSetting("reciter", id);
+    // Reload same verse with new reciter
+    const { playerVerseKey } = get();
+    set({ reciter: id });
+    if (playerVerseKey) {
+      // Force audio src reload by briefly stopping and restarting
+      set({ isPlaying: false });
+      setTimeout(() => set({ isPlaying: true }), 80);
+    }
   },
 }));
