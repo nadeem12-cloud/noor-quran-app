@@ -50,7 +50,10 @@ export default function VerseCard({ verse, surahName, showTransliteration = true
   };
 
   return (
-    <div className={`verse-card ${isThisVerseLoaded ? "verse-card--active" : ""}`}>
+    <div
+      id={`verse-${verse.verseKey}`}
+      className={`verse-card ${isThisVerseLoaded ? "verse-card--active" : ""}`}
+    >
       <div className="verse-refline">
         <span className="verse-key">
           {verse.verseKey}

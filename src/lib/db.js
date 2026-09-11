@@ -1,13 +1,19 @@
 import Dexie from "dexie";
 
-// Local-first storage. Everything here lives on-device — there is no
-// account/sync layer in this MVP (see README for how to add one).
+// Local-first storage. Everything here lives on-device.
 export const db = new Dexie("noor-quran-app");
 
 db.version(1).stores({
   favorites: "verseKey, savedAt",
   chapters: "number", // cached full chapter JSON, keyed by surah number
   settings: "key",
+});
+
+db.version(2).stores({
+  favorites: "verseKey, savedAt",
+  chapters: "number",
+  settings: "key",
+  readingLogs: "date", // keyed by YYYY-MM-DD: { date, count, verses: [] }
 });
 
 export async function getSetting(key, fallback) {
